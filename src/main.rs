@@ -3,6 +3,8 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::fs::File;
 use std::collections::HashMap;
+use std::fmt;
+use std::str::FromStr;
 
 fn count_nucleotides(input: &str) -> (usize, usize, usize, usize) {
     let mut a_count = 0;
@@ -80,12 +82,14 @@ fn parse_fasta(path: &str) -> HashMap<String, String> {
 
 
 #[derive(PartialEq, Eq)]
-pub struct ProfileMatrix {
-    data: [Vec<usize>; 4]
+pub struct ProfileMatrix<'a> {
+    data: [Vec<usize>; 4],
+    source: &'a Vec<String>,
+    length: usize
 }
 
-impl ProfileMatrix {
-    pub fn new(data: Vec<String>) -> ProfileMatrix {
+impl<'a> ProfileMatrix<'a> {
+    pub fn new(data: &'a Vec<String>) -> ProfileMatrix<'a> {
         let size = data[0].len();
         let mut result = [Vec::with_capacity(size),
                       Vec::with_capacity(size),
@@ -103,8 +107,32 @@ impl ProfileMatrix {
         }
 
         ProfileMatrix {
-            data: result
+            data: result,
+            source: data,
+            length: size
         }
+    }
+
+    pub fn len(&'a self) -> usize {
+        self.length
+    }
+
+    pub fn consensus_string(&'a self) -> String {
+        let mut result = String::new();
+        for i in 0..self.len() {
+            let mut max_val = 0;
+            let mut max_nuc: Option<Nucleotide> = None;
+            for x in vec![A, C, G, T] {
+                let val = self[x][i];
+                if val > max_val {
+                    max_nuc = Some(x);
+                    max_val = val;
+                }
+            }
+            result.push_str(&format!("{:?}", max_nuc.unwrap()));
+        }
+        
+        result
     }
 }
 
@@ -114,7 +142,7 @@ pub enum Nucleotide {
 }
 use Nucleotide::{A, C, G, T};
 
-impl std::ops::Index<Nucleotide> for ProfileMatrix {
+impl<'a> std::ops::Index<Nucleotide> for ProfileMatrix<'a> {
     type Output = Vec<usize>;
     fn index(&self, idx: Nucleotide) -> &Vec<usize> {
         match idx {
@@ -125,9 +153,9 @@ impl std::ops::Index<Nucleotide> for ProfileMatrix {
         }
     }
 }
-use std::fmt;
 
-impl fmt::Debug for ProfileMatrix {
+
+impl<'a> fmt::Debug for ProfileMatrix<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result = String::new();
         for n in vec![A, C, G, T] {
@@ -191,10 +219,6 @@ fn gc_content(input: &str) -> f64 {
     p * 100.0
 }
 
-fn consensus_string(data: ProfileMatrix) -> String {
-    unimplemented!()
-}
-
 fn hamming_distance(a: &str, b: &str) -> usize {
     a.chars()
         .zip(b.chars())
@@ -204,7 +228,34 @@ fn hamming_distance(a: &str, b: &str) -> usize {
 }
 
 fn main() {
-    let data: Vec<String> = parse_fasta("testdata.txt").values().map(|l| l.clone()).collect();
-    let pm = ProfileMatrix::new(data);
-    println!("{:?}", pm);
+    let table = "A 71.03711
+C 103.00919
+D 115.02694
+E 129.04259
+F 147.06841
+G 57.02146
+H 137.05891
+I 113.08406
+K 128.09496
+L 113.08406
+M 131.04049
+N 114.04293
+P 97.05276
+Q 128.05858
+R 156.10111
+S 87.03203
+T 101.04768
+V 99.06841
+W 186.07931
+Y 163.06333";
+    let data: HashMap<char, f64> = table
+        .split('\n')
+        .map(|s| {
+            let split: Vec<_> = s.split(' ').collect();
+            (split[0].chars().nth(0).unwrap(), f64::from_str(split[1]).unwrap())
+        })
+        .collect();
+    
+    let sum = "SKADYEK".chars().map(|c| data[&c]).fold(0.0, |sum, x| sum + x);
+    println!("{}", sum);
 }
