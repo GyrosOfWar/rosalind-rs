@@ -4,7 +4,8 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::Path;
 use std::fs::File;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::str::from_utf8_unchecked;
 
 pub fn count_nucleotides(input: &str) -> (usize, usize, usize, usize) {
     let mut a_count = 0;
@@ -24,6 +25,23 @@ pub fn count_nucleotides(input: &str) -> (usize, usize, usize, usize) {
     }
 
     (a_count, c_count, g_count, t_count)
+}
+
+pub fn dna_codon_table() -> HashMap<&'static str, char> {
+    let data = include_str!("../dna_codon_table.txt");
+    let mut table = HashMap::new();
+    for line in data.lines() {
+        let split: Vec<_> = line.split(' ').collect();
+        let codon = split[0].trim();
+        let ch = split[1].trim();
+        if ch == "Stop" {
+            table.insert(codon, '_');
+        } else {
+            table.insert(codon, ch.chars().nth(0).unwrap());
+        }
+    }
+    
+    table
 }
 
 pub fn dna_to_rna(input: &str) -> String {
@@ -88,16 +106,53 @@ pub fn hamming_distance(a: &str, b: &str) -> usize {
 }
 
 pub fn protein_weights(protein_string: &str, table: HashMap<char, f64>) -> f64 {
-    protein_string.chars().map(|c| table[&c]).fold(0.0, |sum, x| sum + x)
+    protein_string
+        .chars()
+        .map(|c| table[&c])
+        .fold(0.0, |sum, x| sum + x)
 }
 
-pub fn open_reading_frames(dna_string: &str, dna_codon_table: HashMap<&str, char>) -> Vec<String> {
-    for i in 0..dna_string.len()-3 {
-        let codon = &dna_string[i..i+3];
-        println!("{}", codon);
+pub fn reading_frame(string: &str, dna_codon_table: &HashMap<&str, char>) -> Option<String> {
+    let bytes = string.as_bytes();
+    if !string.starts_with("ATG") {
+        None
+    } else {
+        let mut value = String::new();
+        for codon_bytes in bytes.chunks(3) {
+            let codon = unsafe { from_utf8_unchecked(codon_bytes) };
+
+            if let Some(&dna) = dna_codon_table.get(codon) {
+                // Stop codon
+                if dna == '_' {
+                    return Some(value);
+                }
+                value.push(dna);
+            }
+        }
+        // No stop codon
+        None
+    }
+}
+
+pub fn open_reading_frames(dna_string: &str, dna_codon_table: HashMap<&str, char>) -> HashSet<String> {
+    let mut result = HashSet::new();
+    let reverse_complement = reverse_complement(dna_string);
+    for start in 0..dna_string.len() - 3 {
+        if let Some(s) = reading_frame(&dna_string[start..], &dna_codon_table) {
+            result.insert(s);
+        }
+        if let Some(s) = reading_frame(&reverse_complement[start..], &dna_codon_table) {
+            result.insert(s);
+        }
     }
 
-    let reverse_complement = reverse_complement(dna_string);
-    
-    vec![]
+    result
+}
+
+pub fn longest_common_substring(strings: Vec<&str>) -> &str {
+    let mut max_len = 0;
+    let mut longest_str: &str;
+
+
+    unimplemented!()
 }
