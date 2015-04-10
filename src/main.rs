@@ -12,6 +12,7 @@ use protein_motif::ProteinMotif;
 mod profile_matrix;
 mod genome;
 mod protein_motif;
+mod strext;
 
 fn fetch_from_uniprot(protein_id: &str) -> HashMap<String, String> {
     let mut client = Client::new();
@@ -23,7 +24,7 @@ fn fetch_from_uniprot(protein_id: &str) -> HashMap<String, String> {
     genome::parse_fasta(&body)
 }
 
-fn main() {
+fn protein_motif() {
     let motif_str = "N{P}[ST]{P}";
     let mut p = ProteinMotif::new(motif_str);
     p.parse();
@@ -44,4 +45,17 @@ fn main() {
             println!("");
         }
     }
+}
+
+fn main() {
+    let mut file = File::open(Path::new("rosalind_splc.txt")).unwrap();
+    let mut data = String::new();
+    file.read_to_string(&mut data);
+    let mut fasta = genome::parse_fasta(&data);
+
+    let dna = &fasta.remove("Rosalind_9745").unwrap();
+    let introns: Vec<&str> = fasta.values().map(|s| s.as_ref()).collect();
+    
+    let translated = genome::translate_exons(dna, introns, genome::dna_codon_table());
+    println!("{}", translated)
 }

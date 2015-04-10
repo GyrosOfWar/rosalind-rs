@@ -1,4 +1,6 @@
 use std::str::from_utf8_unchecked;
+use std::slice::Windows;
+use strext::StrExt;
 
 pub struct ProteinMotif<'a> {
     source: &'a str,
@@ -79,9 +81,9 @@ impl<'a> ProteinMotif<'a> {
     pub fn find_motif(&self, data: &str) -> Vec<usize> {
         let len = self.motif.len();
         let mut indices = Vec::new();
-        for (i, w) in data.as_bytes().windows(len).enumerate() {
-            let window = unsafe { from_utf8_unchecked(w) };
+        for (i, window) in data.windows(len).enumerate() {          
             if self.is_match(window) {
+                println!("{} matched {:?}", window, self.motif);
                 indices.push(i + 1);
             }
         }
@@ -89,6 +91,7 @@ impl<'a> ProteinMotif<'a> {
         indices
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum Motif {
     Char(char),

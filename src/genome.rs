@@ -3,6 +3,7 @@
 use std::io::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::str::from_utf8_unchecked;
+use strext::StrExt;
 
 /// Counts the number of occurrences of the characters A, G, C and T in the input string.
 pub fn count_nucleotides(input: &str) -> (usize, usize, usize, usize) {
@@ -110,9 +111,7 @@ pub fn reading_frame(string: &str, dna_codon_table: &HashMap<&str, char>) -> Opt
         None
     } else {
         let mut value = String::new();
-        for codon_bytes in string.as_bytes().chunks(3) {
-            let codon = unsafe { from_utf8_unchecked(codon_bytes) };
-
+        for codon in string.chunks(3) {
             if let Some(&dna) = dna_codon_table.get(codon) {
                 // Stop codon
                 if dna == '_' {
@@ -139,4 +138,29 @@ pub fn open_reading_frames(dna_string: &str, dna_codon_table: HashMap<&str, char
     }
 
     result
+}
+// TODO create DNAString and ProteinString structs
+pub fn translate_exons(dna: &str, introns: Vec<&str>, dna_codon_table: HashMap<&str, char>) -> String {
+    // Maybe a one pass solution is also possible
+    let mut exons = String::new();
+    exons.push_str(dna);
+    for intron in introns {
+        exons = exons.replace(intron, "");
+    }
+    let mut translated = String::new();
+    
+    for codon in exons.chunks(3) {
+        match dna_codon_table.get(codon) {
+            Some(&acid) =>{
+                // Stop codon
+                if acid == '_' {
+                    return translated;
+                }
+                translated.push(acid);
+            },
+            None => {}
+        }
+    }
+    
+    translated
 }
