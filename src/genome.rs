@@ -1,9 +1,6 @@
 #![allow(dead_code)]
 
-use std::io::BufReader;
 use std::io::prelude::*;
-use std::path::Path;
-use std::fs::File;
 use std::collections::{HashMap, HashSet};
 use std::str::from_utf8_unchecked;
 
@@ -55,14 +52,11 @@ pub fn reverse_complement(input: &str) -> String {
 }             
 /// Parses the FASTA file at the given path and returns
 /// the data stored in it as a map from label to data point.
-pub fn parse_fasta(path: &str) -> HashMap<String, String> {
+pub fn parse_fasta(data: &str) -> HashMap<String, String> {
     let mut result: HashMap<String, String> = HashMap::new();
-    let file = BufReader::new(File::open(Path::new(path)).unwrap());
+   // let file = BufReader::new(File::open(Path::new(path)).unwrap());
     let mut saved_label = String::new();
-    for l in file.lines() {
-        let tmp = l.ok().unwrap();
-        let line = tmp.trim().to_string();
-
+    for line in data.lines() {
         if line.starts_with(">") {
             let label = line[1..].to_string();
             result.insert(label.clone(), String::new());
@@ -72,7 +66,7 @@ pub fn parse_fasta(path: &str) -> HashMap<String, String> {
                 let p = result.get_mut(&saved_label).unwrap();
                 p.push_str(&line);
             } else {
-                result.insert(saved_label.clone(), line);
+                result.insert(saved_label.clone(), line.to_string());
             }
         }
     }
@@ -145,80 +139,4 @@ pub fn open_reading_frames(dna_string: &str, dna_codon_table: HashMap<&str, char
     }
 
     result
-}
-
-pub struct ProteinMotif<'a> {
-    source: &'a str,
-    motif: Vec<Motif>,
-    idx: usize
-}
-
-impl<'a> ProteinMotif<'a> {
-    pub fn new(src: &'a str) -> ProteinMotif<'a> {
-        ProteinMotif {
-            source: src,
-            motif: vec![],
-            idx: 0
-        }
-    }
-
-    fn consume_char(&mut self) -> char {
-        let mut iter = self.source[self.idx..].char_indices();
-        let (_, cur_char) = iter.next().unwrap();
-        let (next_pos, _) = iter.next().unwrap_or((1, ' '));
-        self.idx += next_pos;
-        return cur_char;
-    }
-
-    fn peek_char(&self) -> char {
-        self.source.chars().next().unwrap()
-    }
-
-    fn eof(&self) -> bool {
-        self.idx >= self.source.len()
-    }
-
-    fn parse_either(&mut self) -> Motif {
-        let mut chars = Vec::new();
-        let limit = 5;
-        for _ in 0..limit {
-            match self.consume_char() {
-                ']' => return Motif::Either(chars),
-                c => chars.push(c) 
-            }
-        }
-
-        panic!("Invalid either string")
-    }
-
-    fn parse_not(&mut self) -> Motif {
-        let ch = self.consume_char();
-        assert!(self.consume_char() == '}');
-        Motif::Not(ch)
-    }
-    
-    pub fn parse(&mut self) -> Vec<Motif> {
-        while !self.eof() {
-            let current = self.consume_char();
-            let token = match current {
-                '[' => self.parse_either(),
-                '{' => self.parse_not(),
-                _ => Motif::Char(current)
-            };
-            self.motif.push(token);
-        }
-
-        self.motif.clone()
-    }
-}
-#[derive(Debug, Clone)]
-pub enum Motif {
-    Char(char),
-    Either(Vec<char>),
-    Not(char)
-}
-
-
-pub fn find_protein_motif(motif: &str, data: &str) -> Vec<usize> {
-    unimplemented!()
 }

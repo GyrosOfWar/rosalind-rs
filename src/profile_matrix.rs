@@ -1,5 +1,6 @@
+#![allow(dead_code)]
+
 use std::fmt;
-use std::str::FromStr;
 use std::ops;
 use genome::count_nucleotides;
 
