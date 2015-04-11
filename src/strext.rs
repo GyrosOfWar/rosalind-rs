@@ -1,6 +1,9 @@
-use std::str::from_utf8;
-use std::slice::{Chunks, Windows};
+use std::cmp;
 
+/// An iterator over overlapping substrings of length `size`.
+/// Implementation details are pretty much identical to
+/// std::slice::Windows. 
+#[derive(Debug, Clone)]
 pub struct StrWindows<'a> {
     v: &'a str,
     size: usize
@@ -31,20 +34,59 @@ impl<'a> Iterator for StrWindows<'a> {
     }
 }
 
+/// An iterator over non-overlapping substrings of
+/// length `size`. As with StrWindows, the implementation
+/// is pretty much identical to std::slice::Chunks.
 pub struct StrChunks<'a> {
-    iter: Chunks<'a, u8>
+    v: &'a str,
+    size: usize
 }
 
 impl<'a> Iterator for StrChunks<'a> {
     type Item = &'a str;
-
+    
+    #[inline]
     fn next(&mut self) -> Option<&'a str> {
-        match self.iter.next() {
-            Some(c) => from_utf8(c).ok(),
-            None => None
+        if self.v.len() == 0 {
+            None
+        } else {
+            let ch = cmp::min(self.v.len(), self.size);
+            let (fst, snd) = (&self.v[..ch], &self.v[ch..]);
+            self.v = snd;
+            Some(fst)
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.v.len() == 0 {
+            (0, Some(0))
+        } else {
+            let n = self.v.len() / self.size;
+            let rem = self.v.len() % self.size;
+            let n = if rem > 0 { n+1 } else { n };
+            (n, Some(n))
         }
     }
 }
+
+impl<'a> DoubleEndedIterator for StrChunks<'a> {
+    #[inline]
+    fn next_back(&mut self) -> Option<&'a str> {
+        if self.v.len() == 0 {
+            None
+        } else {
+            let remainder = self.v.len() % self.size;
+            let chunksz = if remainder != 0 { remainder } else { self.size };
+            let split = self.v.len() - chunksz;
+            let (fst, snd) = (&self.v[..split], &self.v[split..]);
+            self.v = fst;
+            Some(snd)
+        }
+    }
+}
+
+impl <'a> ExactSizeIterator for StrChunks<'a> {}
 
 pub trait StrExt {
     fn windows(&self, size: usize) -> StrWindows;
@@ -61,7 +103,8 @@ impl StrExt for str {
 
     fn chunks(&self, size: usize) -> StrChunks {
         StrChunks {
-            iter: self.as_bytes().chunks(size)
+            v: &self,
+            size: size
         }
     }
 }
