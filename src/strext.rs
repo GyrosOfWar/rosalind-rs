@@ -2,16 +2,31 @@ use std::str::from_utf8;
 use std::slice::{Chunks, Windows};
 
 pub struct StrWindows<'a> {
-    iter: Windows<'a, u8>
+    v: &'a str,
+    size: usize
 }
 
 impl<'a> Iterator for StrWindows<'a> {
     type Item = &'a str;
 
+    #[inline]
     fn next(&mut self) -> Option<&'a str> {
-        match self.iter.next() {
-            Some(w) => from_utf8(w).ok(),
-            None => None
+        if self.size > self.v.len() {
+            None
+        } else {
+            let ret = Some(&self.v[..self.size]);
+            self.v = &self.v[1..];
+            ret
+        } 
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.size > self.v.len() {
+            (0, Some(0))
+        } else {
+            let size = self.v.len() - self.size + 1;
+            (size, Some(size))
         }
     }
 }
@@ -39,7 +54,8 @@ pub trait StrExt {
 impl StrExt for str {
     fn windows(&self, size: usize) -> StrWindows {
         StrWindows {
-            iter: self.as_bytes().windows(size)
+            v: &self,
+            size: size
         }
     }
 
