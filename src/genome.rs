@@ -164,3 +164,22 @@ pub fn translate_exons(dna: &str, introns: Vec<&str>, dna_codon_table: HashMap<&
     
     translated
 }
+
+pub fn find_subsequence(haystack: &str, needle: &str) -> Vec<usize> {
+    let mut indices = Vec::new();
+    let mut needle_iter = needle.chars().peekable();
+ 
+    for (i, ch) in haystack.chars().enumerate() {
+        match needle_iter.peek() {
+            Some(&nc) => {
+                if nc == ch {
+                    needle_iter.next();
+                    indices.push(i+1);
+                }
+            }
+            None => return indices
+        }
+    }
+    
+    indices
+}

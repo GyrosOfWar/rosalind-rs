@@ -48,14 +48,15 @@ fn protein_motif() {
 }
 
 fn main() {
-    let mut file = File::open(Path::new("rosalind_splc.txt")).unwrap();
+    let mut file = File::open(Path::new("rosalind_sseq.txt")).unwrap();
     let mut data = String::new();
     file.read_to_string(&mut data);
     let mut fasta = genome::parse_fasta(&data);
 
-    let dna = &fasta.remove("Rosalind_9745").unwrap();
-    let introns: Vec<&str> = fasta.values().map(|s| s.as_ref()).collect();
-    
-    let translated = genome::translate_exons(dna, introns, genome::dna_codon_table());
-    println!("{}", translated)
+    let haystack = &fasta["Rosalind_2269"];
+    let needle = &fasta["Rosalind_7249"];
+
+    let subsq = genome::find_subsequence(haystack, needle);
+    let subsq_str = subsq.iter().fold(String::new(), |s, i| s + &i.to_string() + " ");
+    println!("{}", subsq_str);
 }

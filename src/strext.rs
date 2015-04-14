@@ -34,9 +34,23 @@ impl<'a> Iterator for StrWindows<'a> {
     }
 }
 
+impl<'a> DoubleEndedIterator for StrWindows<'a> {
+    #[inline]
+    fn next_back(&mut self) -> Option<&'a str> {
+        if self.size > self.v.len() {
+            None
+        } else {
+            let ret = Some(&self.v[self.v.len()-self.size..]);
+            self.v = &self.v[..self.v.len()-1];
+            ret
+        }
+    }
+}
+
 /// An iterator over non-overlapping substrings of
 /// length `size`. As with StrWindows, the implementation
 /// is pretty much identical to std::slice::Chunks.
+#[derive(Debug, Clone)]
 pub struct StrChunks<'a> {
     v: &'a str,
     size: usize
@@ -129,4 +143,5 @@ mod tests {
 
         assert_eq!(expected, actual);
     }
+
 }
