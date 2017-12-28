@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::io::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::str::from_utf8_unchecked;
@@ -7,17 +5,15 @@ use strext::StrExt;
 
 /// Counts the number of occurrences of the characters A, G, C and T in the input string.
 pub fn count_nucleotides(input: &str) -> (usize, usize, usize, usize) {
-    input.chars()
-        .fold((0, 0, 0, 0),
-              |(a, g, c, t), ch| {
-                  match ch {
-                      'A' => (a+1, g, c, t),
-                      'G' => (a, g+1, c, t),
-                      'C' => (a, g, c+1, t),
-                      'T' => (a, g, c, t+1),
-                      _ => (a, g, c, t)
-                  }
-              })
+    input
+        .chars()
+        .fold((0, 0, 0, 0), |(a, g, c, t), ch| match ch {
+            'A' => (a + 1, g, c, t),
+            'G' => (a, g + 1, c, t),
+            'C' => (a, g, c + 1, t),
+            'T' => (a, g, c, t + 1),
+            _ => (a, g, c, t),
+        })
 }
 /// Returns a table mapping codons (three nucleotides) to proteins.
 /// The stop codons maps to the character '_'.
@@ -34,7 +30,7 @@ pub fn dna_codon_table() -> HashMap<&'static str, char> {
             table.insert(codon, ch.chars().nth(0).unwrap());
         }
     }
-    
+
     table
 }
 
@@ -43,19 +39,22 @@ pub fn dna_to_rna(input: &str) -> String {
 }
 /// Returns the reverse complement of a string.
 pub fn reverse_complement(input: &str) -> String {
-    input.chars().rev().map(|ch| match ch {
-        'A' => 'T',
-        'C' => 'G',
-        'T' => 'A',
-        'G' => 'C',
-        c => c
-    }).collect()
-}             
+    input
+        .chars()
+        .rev()
+        .map(|ch| match ch {
+            'A' => 'T',
+            'C' => 'G',
+            'T' => 'A',
+            'G' => 'C',
+            c => c,
+        })
+        .collect()
+}
 /// Parses the FASTA file at the given path and returns
 /// the data stored in it as a map from label to data point.
 pub fn parse_fasta(data: &str) -> HashMap<String, String> {
     let mut result: HashMap<String, String> = HashMap::new();
-   // let file = BufReader::new(File::open(Path::new(path)).unwrap());
     let mut saved_label = String::new();
     for line in data.lines() {
         if line.starts_with(">") {
@@ -71,7 +70,7 @@ pub fn parse_fasta(data: &str) -> HashMap<String, String> {
             }
         }
     }
-    
+
     result
 }
 
@@ -92,20 +91,19 @@ pub fn gc_content(input: &str) -> f64 {
 pub fn hamming_distance(a: &str, b: &str) -> usize {
     a.chars()
         .zip(b.chars())
-        .fold(0, |count, (a, b)|
-              if a != b { count + 1 }
-              else { count })
+        .fold(0, |count, (a, b)| if a != b { count + 1 } else { count })
 }
 
-pub fn protein_weights(protein_string: &str, table: HashMap<char, f64>) -> f64 {
+pub fn protein_weights(protein_string: &str, table: HashMap<u8, f64>) -> f64 {
     protein_string
-        .chars()
+        .bytes()
         .map(|c| table[&c])
         .fold(0.0, |sum, x| sum + x)
 }
+
 /// Translates a reading frame from the given DNA string to a protein string. If
 /// the given string has no start codon or does not have an end codon anywhere,
-/// returns None. 
+/// returns None.
 pub fn reading_frame(string: &str, dna_codon_table: &HashMap<&str, char>) -> Option<String> {
     if !string.starts_with("ATG") {
         None
@@ -124,8 +122,11 @@ pub fn reading_frame(string: &str, dna_codon_table: &HashMap<&str, char>) -> Opt
         None
     }
 }
-/// Finds all the open reading frames in the given DNA string and returns them in a set. 
-pub fn open_reading_frames(dna_string: &str, dna_codon_table: HashMap<&str, char>) -> HashSet<String> {
+/// Finds all the open reading frames in the given DNA string and returns them in a set.
+pub fn open_reading_frames(
+    dna_string: &str,
+    dna_codon_table: HashMap<&str, char>,
+) -> HashSet<String> {
     let mut result = HashSet::new();
     let reverse_complement = reverse_complement(dna_string);
     for start in 0..dna_string.len() - 3 {
@@ -140,7 +141,11 @@ pub fn open_reading_frames(dna_string: &str, dna_codon_table: HashMap<&str, char
     result
 }
 // TODO create DNAString and ProteinString structs
-pub fn translate_exons(dna: &str, introns: Vec<&str>, dna_codon_table: HashMap<&str, char>) -> String {
+pub fn translate_exons(
+    dna: &str,
+    introns: Vec<&str>,
+    dna_codon_table: HashMap<&str, char>,
+) -> String {
     // Maybe a one pass solution is also possible
     let mut exons = String::new();
     exons.push_str(dna);
@@ -148,38 +153,36 @@ pub fn translate_exons(dna: &str, introns: Vec<&str>, dna_codon_table: HashMap<&
         exons = exons.replace(intron, "");
     }
     let mut translated = String::new();
-    
+
     for codon in exons.chunks(3) {
         match dna_codon_table.get(codon) {
-            Some(&acid) =>{
+            Some(&acid) => {
                 // Stop codon
                 if acid == '_' {
                     return translated;
                 }
                 translated.push(acid);
-            },
+            }
             None => {}
         }
     }
-    
+
     translated
 }
 
 pub fn find_subsequence(haystack: &str, needle: &str) -> Vec<usize> {
     let mut indices = Vec::new();
     let mut needle_iter = needle.chars().peekable();
- 
+
     for (i, ch) in haystack.chars().enumerate() {
         match needle_iter.peek() {
-            Some(&nc) => {
-                if nc == ch {
-                    needle_iter.next();
-                    indices.push(i+1);
-                }
-            }
-            None => return indices
+            Some(&nc) => if nc == ch {
+                needle_iter.next();
+                indices.push(i + 1);
+            },
+            None => return indices,
         }
     }
-    
+
     indices
 }

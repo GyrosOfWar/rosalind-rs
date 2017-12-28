@@ -5,7 +5,7 @@ use strext::StrExt;
 pub struct ProteinMotif<'a> {
     source: &'a str,
     motif: Vec<Motif>,
-    idx: usize
+    idx: usize,
 }
 
 impl<'a> ProteinMotif<'a> {
@@ -13,7 +13,7 @@ impl<'a> ProteinMotif<'a> {
         ProteinMotif {
             source: src,
             motif: vec![],
-            idx: 0
+            idx: 0,
         }
     }
 
@@ -35,7 +35,7 @@ impl<'a> ProteinMotif<'a> {
         for _ in 0..limit {
             match self.consume_char() {
                 ']' => return Motif::Either(chars),
-                c => chars.push(c) 
+                c => chars.push(c),
             }
         }
 
@@ -47,14 +47,14 @@ impl<'a> ProteinMotif<'a> {
         assert!(self.consume_char() == '}');
         Motif::Not(ch)
     }
-    
+
     pub fn parse(&mut self) {
         while !self.eof() {
             let current = self.consume_char();
             let token = match current {
                 '[' => self.parse_either(),
                 '{' => self.parse_not(),
-                _ => Motif::Char(current)
+                _ => Motif::Char(current),
             };
             self.motif.push(token);
         }
@@ -71,17 +71,17 @@ impl<'a> ProteinMotif<'a> {
                 },
                 Motif::Not(d) => if c == d {
                     return false;
-                }
+                },
             }
         }
-    
+
         true
     }
 
     pub fn find_motif(&self, data: &str) -> Vec<usize> {
         let len = self.motif.len();
         let mut indices = Vec::new();
-        for (i, window) in data.windows(len).enumerate() {          
+        for (i, window) in data.windows(len).enumerate() {
             if self.is_match(window) {
                 println!("{} matched {:?}", window, self.motif);
                 indices.push(i + 1);
@@ -96,6 +96,5 @@ impl<'a> ProteinMotif<'a> {
 pub enum Motif {
     Char(char),
     Either(Vec<char>),
-    Not(char)
+    Not(char),
 }
-

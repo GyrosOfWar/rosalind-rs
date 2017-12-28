@@ -8,19 +8,21 @@ use genome::count_nucleotides;
 pub struct ProfileMatrix<'a> {
     data: [Vec<usize>; 4],
     source: &'a Vec<String>,
-    length: usize
+    length: usize,
 }
 
 impl<'a> ProfileMatrix<'a> {
     pub fn new(data: &'a Vec<String>) -> ProfileMatrix<'a> {
         let size = data[0].len();
-        let mut result = [Vec::with_capacity(size),
-                      Vec::with_capacity(size),
-                      Vec::with_capacity(size),
-                      Vec::with_capacity(size)];
+        let mut result = [
+            Vec::with_capacity(size),
+            Vec::with_capacity(size),
+            Vec::with_capacity(size),
+            Vec::with_capacity(size),
+        ];
 
         let col_data = transpose(data.iter().map(|s| s.chars().collect()).collect());
-            
+
         for col in col_data {
             let (a, c, g, t) = count_nucleotides(&vec_to_string(col));
             result[0].push(a);
@@ -32,7 +34,7 @@ impl<'a> ProfileMatrix<'a> {
         ProfileMatrix {
             data: result,
             source: data,
-            length: size
+            length: size,
         }
     }
 
@@ -54,14 +56,17 @@ impl<'a> ProfileMatrix<'a> {
             }
             result.push_str(&format!("{:?}", max_nuc.unwrap()));
         }
-        
+
         result
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Nucleotide {
-    A = 0, C = 1, G = 2, T = 3
+    A = 0,
+    C = 1,
+    G = 2,
+    T = 3,
 }
 use self::Nucleotide::{A, C, G, T};
 
@@ -72,11 +77,10 @@ impl<'a> ops::Index<Nucleotide> for ProfileMatrix<'a> {
             A => &self.data[0],
             C => &self.data[1],
             G => &self.data[2],
-            T => &self.data[3]
+            T => &self.data[3],
         }
     }
 }
-
 
 impl<'a> fmt::Debug for ProfileMatrix<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -125,6 +129,6 @@ fn format_numbers(nums: &Vec<usize>) -> String {
     for n in nums.iter() {
         result.push_str(&format!("{} ", n));
     }
-    
+
     result
 }

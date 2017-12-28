@@ -1,4 +1,5 @@
-extern crate hyper;
+#![allow(unused, dead_code)]
+extern crate reqwest;
 
 use std::collections::HashMap;
 use std::io::BufReader;
@@ -6,7 +7,9 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 use std::env::args;
-use hyper::Client;
+
+use reqwest::Client;
+
 use protein_motif::ProteinMotif;
 
 mod profile_matrix;
@@ -57,6 +60,8 @@ fn main() {
     let needle = &fasta["Rosalind_7249"];
 
     let subsq = genome::find_subsequence(haystack, needle);
-    let subsq_str = subsq.iter().fold(String::new(), |s, i| s + &i.to_string() + " ");
+    let subsq_str = subsq
+        .iter()
+        .fold(String::new(), |s, i| s + &i.to_string() + " ");
     println!("{}", subsq_str);
 }

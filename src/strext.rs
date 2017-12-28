@@ -2,11 +2,11 @@ use std::cmp;
 
 /// An iterator over overlapping substrings of length `size`.
 /// Implementation details are pretty much identical to
-/// std::slice::Windows. 
+/// std::slice::Windows.
 #[derive(Debug, Clone)]
 pub struct StrWindows<'a> {
     v: &'a str,
-    size: usize
+    size: usize,
 }
 
 impl<'a> Iterator for StrWindows<'a> {
@@ -20,7 +20,7 @@ impl<'a> Iterator for StrWindows<'a> {
             let ret = Some(&self.v[..self.size]);
             self.v = &self.v[1..];
             ret
-        } 
+        }
     }
 
     #[inline]
@@ -40,8 +40,8 @@ impl<'a> DoubleEndedIterator for StrWindows<'a> {
         if self.size > self.v.len() {
             None
         } else {
-            let ret = Some(&self.v[self.v.len()-self.size..]);
-            self.v = &self.v[..self.v.len()-1];
+            let ret = Some(&self.v[self.v.len() - self.size..]);
+            self.v = &self.v[..self.v.len() - 1];
             ret
         }
     }
@@ -53,12 +53,12 @@ impl<'a> DoubleEndedIterator for StrWindows<'a> {
 #[derive(Debug, Clone)]
 pub struct StrChunks<'a> {
     v: &'a str,
-    size: usize
+    size: usize,
 }
 
 impl<'a> Iterator for StrChunks<'a> {
     type Item = &'a str;
-    
+
     #[inline]
     fn next(&mut self) -> Option<&'a str> {
         if self.v.len() == 0 {
@@ -78,7 +78,7 @@ impl<'a> Iterator for StrChunks<'a> {
         } else {
             let n = self.v.len() / self.size;
             let rem = self.v.len() % self.size;
-            let n = if rem > 0 { n+1 } else { n };
+            let n = if rem > 0 { n + 1 } else { n };
             (n, Some(n))
         }
     }
@@ -91,7 +91,11 @@ impl<'a> DoubleEndedIterator for StrChunks<'a> {
             None
         } else {
             let remainder = self.v.len() % self.size;
-            let chunksz = if remainder != 0 { remainder } else { self.size };
+            let chunksz = if remainder != 0 {
+                remainder
+            } else {
+                self.size
+            };
             let split = self.v.len() - chunksz;
             let (fst, snd) = (&self.v[..split], &self.v[split..]);
             self.v = fst;
@@ -100,7 +104,7 @@ impl<'a> DoubleEndedIterator for StrChunks<'a> {
     }
 }
 
-impl <'a> ExactSizeIterator for StrChunks<'a> {}
+impl<'a> ExactSizeIterator for StrChunks<'a> {}
 
 pub trait StrExt {
     fn windows(&self, size: usize) -> StrWindows;
@@ -111,21 +115,21 @@ impl StrExt for str {
     fn windows(&self, size: usize) -> StrWindows {
         StrWindows {
             v: &self,
-            size: size
+            size: size,
         }
     }
 
     fn chunks(&self, size: usize) -> StrChunks {
         StrChunks {
             v: &self,
-            size: size
+            size: size,
         }
     }
 }
 
 mod tests {
     use super::StrExt;
-    
+
     #[test]
     fn basic_windows() {
         let s = "ABCD";
